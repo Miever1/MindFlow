@@ -1,17 +1,15 @@
+import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import dayjs from "dayjs";
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  Pressable,
-  Platform,
-  StyleSheet,
   Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
   TouchableWithoutFeedback,
+  View,
 } from "react-native";
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
-import dayjs from "dayjs";
 
 type Props = {
   label: string;
@@ -48,52 +46,48 @@ export default function DateTimeField({
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
       <View style={styles.row}>
-        <Pressable
-          style={styles.inputBox}
-          onPress={() => handleOpen("time")}
-        >
+        <Pressable style={styles.inputBox} onPress={() => handleOpen("time")}>
           <Text style={styles.text}>
-            {time ? dayjs(time).format("hh:mm A") : "Select time"}
+            {time ? dayjs(time).format("HH:mm") : "Select Time"}
           </Text>
         </Pressable>
 
-        <Pressable
-          style={styles.inputBox}
-          onPress={() => handleOpen("date")}
-        >
+        <Pressable style={styles.inputBox} onPress={() => handleOpen("date")}>
           <Text style={styles.text}>
-            {date ? dayjs(date).format("MM/DD/YYYY") : "Select date"}
+            {date ? dayjs(date).format("MM/DD/YYYY") : "Select Date"}
           </Text>
         </Pressable>
       </View>
 
-      {/* Picker: show only if triggered */}
-      {showPicker && Platform.OS !== "ios" && (
-        <DateTimePicker
-          value={new Date()}
-          mode={mode}
-          display="default"
-          onChange={handleChange}
-        />
-      )}
-
-      {/* Optional: modal for iOS spinner-like behavior */}
       {showPicker && Platform.OS === "ios" && (
         <Modal transparent animationType="fade">
           <TouchableWithoutFeedback onPress={() => setShowPicker(false)}>
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
                 <DateTimePicker
-                  value={new Date()}
+                  value={mode === "time" ? (time || new Date()) : (date || new Date())}
                   mode={mode}
                   display="spinner"
-                  onChange={handleChange}
+                  onChange={(event, selectedDate) => {
+                    handleChange(event, selectedDate);
+                    setShowPicker(false);
+                  }}
                   style={{ backgroundColor: "#fff" }}
                 />
               </View>
             </View>
           </TouchableWithoutFeedback>
         </Modal>
+      )}
+
+      {showPicker && Platform.OS !== "ios" && (
+        <DateTimePicker
+          value={mode === "time" ? (time || new Date()) : (date || new Date())}
+          mode={mode}
+          display="default"
+          onChange={handleChange}
+          is24Hour={true}
+        />
       )}
     </View>
   );
@@ -123,9 +117,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     backgroundColor: "#fff",
-  },
-  icon: {
-    marginRight: 6,
   },
   text: {
     fontSize: 14,

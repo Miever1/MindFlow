@@ -1,22 +1,28 @@
 {
   "expo": {
-    "name": "MindFlow-new",
+    "name": "MindFlow",
     "slug": "MindFlow-new",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "mindflownew",
+    "icon": "./assets/images/appstore.png",
+    "scheme": "mindflow",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
-      "supportsTablet": true
+      "icon": "./assets/images/appstore.png",
+      "supportsTablet": true,
+      "bundleIdentifier": "com.miever.MindFlow",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.miever.MindFlow"
     },
     "web": {
       "bundler": "metro",
@@ -37,6 +43,19 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "144a2835-a998-4bd6-8927-24a2eda26735"
+      }
+    },
+    "owner": "miever",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/144a2835-a998-4bd6-8927-24a2eda26735"
     }
   }
 }

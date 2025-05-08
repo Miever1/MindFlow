@@ -1,8 +1,7 @@
-import React from "react";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { Tabs } from "expo-router";
-import { useRouter } from "expo-router";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { Tabs, useRouter } from "expo-router";
+import React from "react";
 
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>["name"];
@@ -15,9 +14,7 @@ export default function TabLayout() {
   const hasUnread = true;
   const router = useRouter();
   return (
-    <Tabs
-     
-    >
+    <Tabs>
       <Tabs.Screen
         name="index"
         options={{

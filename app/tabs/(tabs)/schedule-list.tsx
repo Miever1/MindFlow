@@ -1,33 +1,34 @@
-import React, { useState, useRef } from 'react';
-import dayjs from 'dayjs';
-import { useRouter } from 'expo-router';
-import { Text } from '@/components/ui/text';
 import { Box } from '@/components/ui/box';
-import { Heading } from '@/components/ui/heading';
-import { Icon, CloseIcon } from '@/components/ui/icon';
-import { Button, ButtonText } from '@/components/ui/button';
-import {
-  View,
-  SectionList,
-  StyleSheet,
-  TouchableOpacity,
-  SectionList as RNSectionList,
-  ViewToken,
-  InteractionManager,
-} from 'react-native';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import DateSelector from '@/components/ui/date-selector';
+import { Heading } from '@/components/ui/heading';
+import { AddIcon, CloseIcon, Icon } from '@/components/ui/icon';
 import {
   Modal,
   ModalBackdrop,
-  ModalContent,
-  ModalCloseButton,
-  ModalHeader,
   ModalBody,
+  ModalCloseButton,
+  ModalContent,
   ModalFooter,
+  ModalHeader,
 } from '@/components/ui/modal';
+import { Text } from '@/components/ui/text';
+import { useFocusEffect } from "@react-navigation/native";
+import dayjs from 'dayjs';
+import { useRouter } from 'expo-router';
+import React, { useRef, useState } from 'react';
+import {
+  Alert,
+  SectionList as RNSectionList,
+  SectionList,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  ViewToken
+} from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
+import { useSchedule } from '../../context/schedule-context';
 
-// ✅ 类型定义
 interface ScheduleItem {
   time?: string;
   duration?: string;
@@ -44,82 +45,65 @@ interface ScheduleSection {
 
 const ITEM_HEIGHT = 42;
 
-
-// ✅ 生成日程数据
-function generateScheduleWithFixedTasks(): ScheduleSection[] {
-  const startDate = dayjs('2025-04-20');
-  const endDate = dayjs('2025-05-16');
-  const result: ScheduleSection[] = [];
-
-  for (let d = startDate; d.isBefore(endDate) || d.isSame(endDate, 'day'); d = d.add(1, 'day')) {
-    const dateStr = d.format('YYYY-MM-DD');
-    const isToday = dateStr === '2025-05-02';
-    const isTomorrow = dateStr === '2025-05-03';
-
-    const data: ScheduleItem[] = isToday
-      ? [
-          { time: '9:00 AM', duration: '2h', title: 'Gym', location: 'Gym' },
-          { time: '12:00', duration: '2h', title: 'Class 2', location: 'Room 5005' },
-          { time: '2:00 PM', duration: '1h', title: 'Lunch', location: 'Cafeteria' },
-          { time: '3:00 PM', duration: '2h', title: 'Class 3', location: 'Room 6201' },
-          { time: '6:00 PM', duration: '2h', title: 'Do groceries', location: 'Supermarket' },
-        ]
-      : isTomorrow
-      ? [
-          { time: '10:00 AM', duration: '2h', title: 'Class 1', location: 'Room 5001' },
-          { time: '1:00 PM', duration: '1h', title: 'Project Meeting', location: 'Zoom' },
-          { time: '2:30 PM', duration: '1.5h', title: 'Library Study', location: 'Library - 2F' },
-          { time: '4:30 PM', duration: '1h', title: 'Coffee Break', location: 'Cafe Bliss' },
-          { time: '6:00 PM', duration: '2h', title: 'Dinner with Team', location: 'Sushi House' },
-        ]
-      : [];
-
-    result.push({
-      title: `${isToday ? 'Today - ' : ''}${d.format('ddd MMM D')}`,
-      date: dateStr,
-      data: data.length ? data : [{ __empty: true }],
-    });
-  }
-
-  return result;
-}
-
-const rawScheduleData: ScheduleSection[] = generateScheduleWithFixedTasks();
-
 export default function ScheduleList() {
   const router = useRouter();
+  const { schedules, removeSchedule } = useSchedule();
+  const [sections, setSections] = useState<ScheduleSection[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(dayjs().format('YYYY-MM-DD'));
   const sectionListRef = useRef<RNSectionList<ScheduleItem>>(null);
   const viewConfigRef = useRef({ viewAreaCoveragePercentThreshold: 30 });
   const isAutoScrollingRef = useRef(false);
 
-  const handleDateSelect = (date: string) => {
-    setSelectedDate(date);
-    const index = rawScheduleData.findIndex(section =>
-      dayjs(section.date).isSame(date, 'day')
-    );
-    console.log('index', index, 'date', date);
+  useFocusEffect(
+    React.useCallback(() => {
+        const startDate = dayjs().subtract(14, 'day');
+        const endDate = dayjs("2025-05-16");
+        const allDates: ScheduleSection[] = [];
 
-    if (index !== -1 && sectionListRef.current) {
-      isAutoScrollingRef.current = true;
+        for (let d = startDate; d.isBefore(endDate) || d.isSame(endDate, 'day'); d = d.add(1, 'day')) {
+            const dateStr = d.format("YYYY-MM-DD");
+            const isToday = dateStr === dayjs().format("YYYY-MM-DD");
 
-      InteractionManager.runAfterInteractions(() => {
-        requestAnimationFrame(() => {
-          sectionListRef.current?.scrollToLocation({
-            sectionIndex: index,
-            itemIndex: 0,
-            viewPosition: 0,
-            animated: true,
-          });
+            allDates.push({
+                title: isToday ? `Today - ${dateStr}` : dateStr,
+                date: dateStr,
+                data: schedules[dateStr] && schedules[dateStr].length > 0 ? schedules[dateStr] : [{ __empty: true }],
+            });
+        }
 
-          setTimeout(() => {
-            isAutoScrollingRef.current = false;
-          }, 500);
-        });
+        setSections(allDates);
+
+        const todayIndex = allDates.findIndex(section => section.date === dayjs().format("YYYY-MM-DD"));
+        if (todayIndex !== -1 && sectionListRef.current) {
+            setTimeout(() => {
+                sectionListRef.current?.scrollToLocation({
+                    sectionIndex: todayIndex,
+                    itemIndex: 0,
+                    viewPosition: 0.3,
+                    animated: true,
+                });
+            }, 300);
+        }
+
+    }, [schedules])
+);
+
+const handleDateSelect = (date: string) => {
+  setSelectedDate(date);
+  const index = sections.findIndex(section =>
+    section.date === date
+  );
+
+  if (index !== -1 && sectionListRef.current) {
+      sectionListRef.current.scrollToLocation({
+          sectionIndex: index,
+          itemIndex: 0,
+          viewPosition: 0,
+          animated: true,
       });
-    }
-  };
+  }
+};
 
   const onViewRef = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     if (isAutoScrollingRef.current) return;
@@ -130,49 +114,74 @@ export default function ScheduleList() {
     }
   });
 
-  const allDates = rawScheduleData.map(s => s.date);
-  const minDate = allDates[0];
-  const maxDate = allDates[allDates.length - 1];
+  const allDates = sections.map((section) => section.date);
+  const minDate = allDates[0] || "2025-04-20";
+  const maxDate = allDates[allDates.length - 1] || "2025-05-16";
 
   return (
     <Box style={{ flex: 1, position: 'relative' }}>
       <DateSelector
         selectedDate={selectedDate}
         onSelect={handleDateSelect}
-        minDate={minDate}
+        minDate={dayjs().subtract(14, 'day').format("YYYY-MM-DD")}
         maxDate={maxDate}
       />
 
       <SectionList<ScheduleItem, ScheduleSection>
         // @ts-ignore
         ref={sectionListRef}
-        sections={rawScheduleData}
+        sections={sections}
         keyExtractor={(_, index) => index.toString()}
         onViewableItemsChanged={onViewRef.current}
         viewabilityConfig={viewConfigRef.current}
         renderSectionHeader={({ section }) => (
           <Text style={styles.header}>{section.title}</Text>
         )}
-        renderItem={({ item }) =>
-          item?.__empty ? (
+        renderItem={({ section, item, index }) =>
+          "__empty" in item && item.__empty ? (
             <View style={styles.emptyItemContainer}>
               <Text style={styles.emptyText}>No schedule</Text>
             </View>
           ) : (
-            <View style={styles.itemContainer}>
-              <View style={styles.timeContainer}>
-                <Text style={styles.timeText}>{item.time}</Text>
-                <Text style={styles.durationText}>{item.duration}</Text>
-              </View>
-              <View style={styles.line} />
-              <View style={styles.contentContainer}>
-                <Text style={styles.title}>{item.title}</Text>
-                <View style={styles.locationRow}>
-                  <FontAwesome name="map-marker" size={14} color="#aaa" />
-                  <Text style={styles.locationText}>{item.location}</Text>
+            <Swipeable
+              renderRightActions={() => (
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => {
+                    Alert.alert(
+                      "Delete Task",
+                      `Are you sure you want to delete "${item.title}"?`,
+                      [
+                        { text: "Cancel", style: "cancel" },
+                        {
+                          text: "Delete",
+                          style: "destructive",
+                          onPress: () => {
+                            removeSchedule(section.date, index);
+                          },
+                        },
+                      ]
+                    );
+                  }}
+                >
+                  <Text style={styles.deleteButtonText}>Delete</Text>
+                </TouchableOpacity>
+              )}
+            >
+              <View style={styles.itemContainer}>
+                <View style={styles.timeContainer}>
+                  <Text style={styles.timeText}>{item.time}</Text>
+                  <Text style={styles.durationText}>{item.duration}</Text>
+                </View>
+                <View style={styles.line} />
+                <View style={styles.contentContainer}>
+                  <Text style={styles.title}>{item.title}</Text>
+                  <View style={styles.locationRow}>
+                    <Text style={styles.locationText}>{item.location}</Text>
+                  </View>
                 </View>
               </View>
-            </View>
+            </Swipeable>
           )
         }
         renderSectionFooter={() => null}
@@ -183,8 +192,16 @@ export default function ScheduleList() {
         })}
       />
 
-      <TouchableOpacity style={styles.fab} onPress={() => setShowModal(true)}>
-        <FontAwesome name="plus" size={24} color="#fff" />
+      <TouchableOpacity 
+        style={styles.fabContainer}
+      >
+          <Button
+            size="lg"
+            className="rounded-full p-0 w-16 h-16"
+            onPress={() => setShowModal(true)}
+          >
+            <ButtonIcon as={AddIcon} size="lg" />
+          </Button>
       </TouchableOpacity>
 
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} size="md">
@@ -228,6 +245,17 @@ export default function ScheduleList() {
 }
 
 const styles = StyleSheet.create({
+  deleteButton: {
+    backgroundColor: '#f87171',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    marginVertical: 8,
+  },
+  deleteButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
   header: {
     backgroundColor: '#f8fafc',
     padding: 14,
@@ -286,21 +314,15 @@ const styles = StyleSheet.create({
     color: '#64748b',
     fontSize: 14,
   },
-  fab: {
+  fabContainer: {
     position: 'absolute',
-    bottom: 16,
+    bottom: 24,
     right: 24,
-    backgroundColor: '#3b82f6',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 4,
+    elevation: 6,
     shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
   },
   emptyItemContainer: {
     padding: 24,
