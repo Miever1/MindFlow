@@ -33,7 +33,7 @@ export const ScheduleProvider = ({ children }: { children: ReactNode }) => {
         }
 
         schedules[today] = [
-            { time: "09:00", duration: "2h", title: "Gym", location: "Gym" },
+            { time: "09:00", duration: "1h", title: "Gym", location: "Gym" },
             { time: "12:00", duration: "2h", title: "Class 2", location: "Room 5005" },
             { time: "14:00", duration: "1h", title: "Lunch", location: "Cafeteria" },
             { time: "15:00", duration: "2h", title: "Class 3", location: "Room 6201" },

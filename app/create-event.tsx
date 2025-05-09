@@ -58,14 +58,12 @@ export default function CreateEventScreen() {
   const [nextAvailableTime, setNextAvailableTime] = useState<string | null>(null);
   
   const handleAdd = () => {
-    if (!title || !location || !startTime || !startDate || !endTime || !endDate) {
-        Alert.alert("Missing Information", "Please fill in the required fields.");
+    if (!title) {
         return;
     }
 
     const startDateTime = dayjs(startDate).format("YYYY-MM-DD");
     const startTimeFormatted = dayjs(startTime).format("HH:mm");
-    const endTimeFormatted = dayjs(endTime).format("HH:mm");
 
     const durationMinutes = dayjs(endTime).diff(dayjs(startTime), "minute");
     const hours = Math.floor(durationMinutes / 60);
@@ -102,7 +100,6 @@ export default function CreateEventScreen() {
 const handleIgnoreConflict = () => {
   const startDateTime = dayjs(startDate).format("YYYY-MM-DD");
   
-  // 直接使用当前表单中的数据，不要重新构建任务对象
   const newTask: ScheduleItem = {
     time: dayjs(startTime).format("HH:mm"),
     duration: taskDuration,
@@ -111,10 +108,8 @@ const handleIgnoreConflict = () => {
     priority,
   };
 
-  // 直接添加任务
   addSchedule(startDateTime, newTask, true);
   
-  // 关闭弹窗并返回任务列表
   setShowModal(false);
   router.push("/tabs/schedule-list");
 };
@@ -132,7 +127,6 @@ const findNextAvailableSlot = () => {
   const tasks = schedules[startDateTime] || [];
   const durationMinutes = parseDuration(taskDuration);
 
-  // 查找当天下一个可用时间段
   for (let i = 0; i < tasks.length; i++) {
       const currentTask = tasks[i];
       const nextTask = tasks[i + 1];
@@ -140,7 +134,6 @@ const findNextAvailableSlot = () => {
       const currentEndTime = dayjs(`${startDateTime} ${currentTask.time}`, "YYYY-MM-DD HH:mm")
           .add(parseDuration(currentTask.duration), "minute");
 
-      // 如果已经到最后一个任务，直接插入到结尾
       if (!nextTask) {
           const suggestedTime = currentEndTime.format("HH:mm");
           setNextAvailableTime(suggestedTime);
@@ -149,7 +142,6 @@ const findNextAvailableSlot = () => {
 
       const nextStartTime = dayjs(`${startDateTime} ${nextTask.time}`, "YYYY-MM-DD HH:mm");
 
-      // 如果任务之间有足够的间隔
       if (nextStartTime.diff(currentEndTime, "minute") >= durationMinutes) {
           const suggestedTime = currentEndTime.format("HH:mm");
           setNextAvailableTime(suggestedTime);
@@ -157,7 +149,6 @@ const findNextAvailableSlot = () => {
       }
   }
 
-  // 如果一天没有任务，可以从头开始
   if (tasks.length === 0) {
       const suggestedTime = "08:00";
       setNextAvailableTime(suggestedTime);
@@ -172,12 +163,15 @@ const findNextAvailableSlot = () => {
     <SafeAreaView style={styles.safeArea}>
       <Header
         title="Create Event"
-        onAdd={handleAdd}
+        onAdd={title ? handleAdd : undefined}
         onBack={() => router.push("/tabs/schedule-list")}
       />
       <ScrollView contentContainerStyle={styles.scroll}>
         <VStack space="md">
-          <FormControl>
+          <FormControl
+            isRequired
+            isInvalid={!title}
+          >
             <FormControlLabel>
               <FormControlLabelText>Title</FormControlLabelText>
             </FormControlLabel>
@@ -352,7 +346,6 @@ const findNextAvailableSlot = () => {
         </Text>
     )}
     
-    {/* 添加建议时间显示 */}
     {nextAvailableTime && (
         <Text className="mt-4 text-typography-700 font-semibold">
             Suggested Time: {nextAvailableTime}

@@ -1,16 +1,18 @@
-import React, { useState } from "react";
-import { Box } from "@/components/ui/box";
-import { Text } from "@/components/ui/text";
-import { Card } from "@/components/ui/card";
-import { Heading } from "@/components/ui/heading";
 import { Avatar, AvatarFallbackText, AvatarImage } from "@/components/ui/avatar";
-import { VStack } from "@/components/ui/vstack";
-import { HStack } from "@/components/ui/hstack";
-import { Divider } from "@/components/ui/divider";
+import { Box } from "@/components/ui/box";
 import { Button, ButtonText } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Divider } from "@/components/ui/divider";
+import { Heading } from "@/components/ui/heading";
+import { HStack } from "@/components/ui/hstack";
+import { Text } from "@/components/ui/text";
+import { VStack } from "@/components/ui/vstack";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { useRouter } from "expo-router";
+import React from "react";
 
 const UserProfile = () => {
+  const router = useRouter();
   return (
     <Box>
       <Card className="p-6 rounded-lg m-3">
@@ -54,7 +56,13 @@ const UserProfile = () => {
         </VStack>
       </Card>
       <Box className="mx-2">
-        <Button className="py-2 px-4">
+        <Button
+          className="py-2 px-4"
+          onPress={() => {
+            console.log("Logging out...");
+            router.push("/login");
+          }}
+        >
           <ButtonText size="sm">Log out</ButtonText>
         </Button>
       </Box>

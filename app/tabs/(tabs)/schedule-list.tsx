@@ -250,7 +250,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     width: 80,
-    marginVertical: 8,
   },
   deleteButtonText: {
     color: 'white',

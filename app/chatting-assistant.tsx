@@ -1,18 +1,19 @@
-import React, { useState, useRef } from "react";
+import { Avatar, AvatarFallbackText, AvatarImage } from "@/components/ui/avatar";
+import Header from "@/components/ui/header";
+import { Text } from "@/components/ui/text";
+import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
+import { useRouter } from "expo-router";
+import React, { useRef, useState } from "react";
 import {
-  SafeAreaView,
-  View,
-  TextInput,
   FlatList,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  SafeAreaView,
+  StyleSheet,
+  TextInput,
   TouchableOpacity,
+  View,
 } from "react-native";
-import { Text } from "@/components/ui/text";
-import Header from "@/components/ui/header";
-import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
-import { Avatar, AvatarFallbackText, AvatarImage } from "@/components/ui/avatar";
 
 export const fullConversation: Message[] = [
     { id: "1", type: "bot", text: "What task would you like to add?" },
@@ -57,6 +58,7 @@ type Message = {
 };
 
 export default function VoiceAssistantScreen() {
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([fullConversation[0]]);
   const [input, setInput] = useState("");
   const [step, setStep] = useState(1);
@@ -96,6 +98,13 @@ export default function VoiceAssistantScreen() {
     }, 500);
   };
 
+  const handleLinkPress = (message: Message) => {
+    if (message.isLink) {
+        console.log("Navigating to schedule list...");
+        router.push("/tabs/schedule-list");
+    }
+  };
+
   const cancelVoiceInput = () => {
     if (listenTimeoutRef.current) {
       clearTimeout(listenTimeoutRef.current);
@@ -109,6 +118,7 @@ export default function VoiceAssistantScreen() {
     setIsListening(true);
     setInputMode("voice");
   
+    // @ts-ignore
     listenTimeoutRef.current = setTimeout(() => {
       const voiceMessage: Message = {
         id: Date.now().toString(),
@@ -134,74 +144,78 @@ export default function VoiceAssistantScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <Header title="AI Assistant" />
-
       <FlatList
         style={styles.chat}
         data={messages}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-            <View
-              style={[
-                styles.messageRow,
-                item.type === "user" ? styles.userRow : styles.botRow,
-              ]}
+            <TouchableOpacity
+              onPress={() => handleLinkPress(item)}
+              activeOpacity={item.isLink ? 0.7 : 1}
             >
-              {item.type === "bot" && (
-                <Avatar style={styles.avatar}>
-                  <AvatarFallbackText>Bot</AvatarFallbackText>
-                  <AvatarImage source={{ uri: "https://i.pravatar.cc/100?u=bot" }} />
-                </Avatar>
-              )}
-          
-              <View
-                style={[
-                  styles.bubble,
-                  item.type === "user" ? styles.userBubble : styles.botBubble,
-                ]}
-              >
-                {item.isVoice ? (
-                  <View style={styles.voiceBubble}>
-                    <FontAwesome6
-                      name="microphone"
-                      size={14}
-                      color={item.type === "user" ? "#fff" : "#0f172a"}
-                    />
-                    <Text
-                      style={[
-                        styles.voiceDuration,
-                        item.type === "user" && { color: "#fff" },
-                      ]}
-                    >
-                      {item.duration || "00:05"}
-                    </Text>
-                  </View>
-                ) : (
-                  <Text
+                <View
+                  style={[
+                    styles.messageRow,
+                    item.type === "user" ? styles.userRow : styles.botRow,
+                  ]}
+                >
+                  {item.type === "bot" && (
+                    <Avatar style={styles.avatar}>
+                      <AvatarFallbackText>Bot</AvatarFallbackText>
+                      <AvatarImage source={{ uri: "https://i.pravatar.cc/100?u=bot" }} />
+                    </Avatar>
+                  )}
+              
+                  <View
                     style={[
-                      styles.messageText,
-                      item.type === "user" && { color: "#fff" },
-                      item.isLink && {
-                        color: "#3b82f6",
-                        textDecorationLine: "underline",
-                      },
+                      styles.bubble,
+                      item.type === "user" ? styles.userBubble : styles.botBubble,
                     ]}
                   >
-                    {item.text}
-                  </Text>
-                )}
-              </View>
-          
-              {item.type === "user" && (
-                <Avatar style={styles.avatar}>
-                  <AvatarFallbackText>U</AvatarFallbackText>
-                  <AvatarImage
-                    source={{
-                      uri: "https://gluestack.github.io/public-blog-video-assets/camera.png",
-                    }}
-                  />
-                </Avatar>
-              )}
-            </View>
+                    {item.isVoice ? (
+                      <View style={styles.voiceBubble}>
+                        <FontAwesome6
+                          name="microphone"
+                          size={14}
+                          color={item.type === "user" ? "#fff" : "#0f172a"}
+                        />
+                        <Text
+                          style={[
+                            styles.voiceDuration,
+                            item.type === "user" && { color: "#fff" },
+                          ]}
+                        >
+                          {item.duration || "00:05"}
+                        </Text>
+                      </View>
+                    ) : (
+                      <Text
+                        style={[
+                          styles.messageText,
+                          item.type === "user" && { color: "#fff" },
+                          item.isLink && {
+                            color: "#3b82f6",
+                            textDecorationLine: "underline",
+                          },
+                        ]}
+                      >
+                        {item.text}
+                      </Text>
+                    )}
+                  </View>
+              
+                  {item.type === "user" && (
+                    <Avatar style={styles.avatar}>
+                      <AvatarFallbackText>U</AvatarFallbackText>
+                      <AvatarImage
+                        source={{
+                          uri: "https://gluestack.github.io/public-blog-video-assets/camera.png",
+                        }}
+                      />
+                    </Avatar>
+                  )}
+                </View>
+            </TouchableOpacity>
           )}
       />
 
@@ -238,7 +252,7 @@ export default function VoiceAssistantScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+  container: { flex: 1, backgroundColor: "#fff", marginBottom: Platform.OS === "ios" ? 0 : 40 },
   chat: { flex: 1, padding: 16 },
   messageRow: {
     flexDirection: "row",

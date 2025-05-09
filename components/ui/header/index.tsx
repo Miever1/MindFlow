@@ -1,10 +1,11 @@
-import React from "react";
-import { useRouter } from "expo-router";
-import { SafeAreaView, StyleSheet, View } from "react-native";
-import { Text } from "@/components/ui/text";
+// Header.tsx
 import { Pressable } from "@/components/ui/pressable";
-import { Divider } from "@/components/ui/divider";
+import { Text } from "@/components/ui/text";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { useRouter } from "expo-router";
+import React from "react";
+import { Platform, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type HeaderProps = {
   title: string;
@@ -18,41 +19,37 @@ export default function Header({ title, onAdd, onBack, showBack = true, rightAct
   const router = useRouter();
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView edges={Platform.OS === "ios" ? [] : ["top", "left", "right"] } style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Left side */}
         {showBack ? (
-            <Pressable onPress={onBack ?? (() => router.back())} style={styles.iconButton}>
+          <Pressable onPress={onBack ?? (() => router.back())} style={styles.iconButton}>
             <FontAwesome name="chevron-left" size={20} color="#1e293b" />
-            </Pressable>
+          </Pressable>
         ) : (
-            <View style={styles.placeholder} />
+          <View style={styles.placeholder} />
         )}
 
-        {/* Center title */}
         <View style={styles.titleWrapper}>
-            <Text style={styles.title}>{title}</Text>
+          <Text style={styles.title}>{title}</Text>
         </View>
 
-        {/* Right side */}
         {rightAction ? (
-            <View style={styles.rightWrapper}>{rightAction}</View>
+          <View style={styles.rightWrapper}>{rightAction}</View>
         ) : onAdd ? (
-            <Pressable onPress={onAdd} style={styles.addButton}>
+          <Pressable onPress={onAdd} style={styles.addButton}>
             <Text style={styles.buttonText}>Done</Text>
-            </Pressable>
+          </Pressable>
         ) : (
-            <View style={styles.placeholder} />
+          <View style={styles.placeholder} />
         )}
-        </View>
-      <Divider />
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: "#fff",
+    backgroundColor: "#ffffff",
   },
   container: {
     flexDirection: "row",
