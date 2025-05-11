@@ -3,6 +3,7 @@ import React, { createContext, ReactNode, useContext, useEffect, useState } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface ScheduleItem {
+    id?: string;
     time: string;
     duration: string;
     title: string;
@@ -13,7 +14,7 @@ export interface ScheduleItem {
 
 interface ScheduleContextType {
     schedules: Record<string, ScheduleItem[]>;
-    addSchedule: (date: string, newTask: ScheduleItem, ignoreConflict?: boolean) => ScheduleItem | null;
+    addSchedule: (date: string, newTask: ScheduleItem, ignoreConflict?: boolean) => Promise<ScheduleItem | null>;
     removeSchedule: (date: string, taskIndex: number) => void;
     findConflict: (date: string, newTask: ScheduleItem) => ScheduleItem | null;
 }
@@ -99,21 +100,44 @@ export const ScheduleProvider = ({ children }: { children: ReactNode }) => {
         return null;
     };
 
-    const addSchedule = (date: string, newTask: ScheduleItem, ignoreConflict = false): ScheduleItem | null => {
-        const conflict = findConflict(date, newTask);
-
-        if (conflict && !ignoreConflict) return conflict;
-
-        const updated = { ...schedules };
-        updated[date] = [...(updated[date] || []), newTask].sort((a, b) =>
-            dayjs(`${date} ${a.time}`, "YYYY-MM-DD HH:mm").isBefore(
-                dayjs(`${date} ${b.time}`, "YYYY-MM-DD HH:mm")
-            ) ? -1 : 1
-        );
-
-        setSchedules(updated);
-        saveSchedules(updated);
-        return null;
+    const addSchedule = async (date: string, newTask: ScheduleItem, ignoreConflict = false): Promise<ScheduleItem | null> => {
+        try {
+            const storedData = await AsyncStorage.getItem(STORAGE_KEY);
+            const currentSchedules = storedData ? JSON.parse(storedData) : {};
+    
+            const tasks = currentSchedules[date] || [];
+            const newStartTime = dayjs(`${date} ${newTask.time}`, "YYYY-MM-DD HH:mm", true);
+            const durationMinutes = parseDuration(newTask.duration);
+            const newEndTime = newStartTime.add(durationMinutes, "minute");
+    
+            for (const task of tasks) {
+                const taskStartTime = dayjs(`${date} ${task.time}`, "YYYY-MM-DD HH:mm", true);
+                const taskDuration = parseDuration(task.duration);
+                const taskEndTime = taskStartTime.add(taskDuration, "minute");
+    
+                if (newStartTime.isBefore(taskEndTime) && newEndTime.isAfter(taskStartTime)) {
+                    if (!ignoreConflict) return task;
+                }
+            }
+    
+            const updatedSchedules = { ...currentSchedules };
+            updatedSchedules[date] = [...tasks, newTask].sort((a, b) =>
+                dayjs(`${date} ${a.time}`, "YYYY-MM-DD HH:mm").isBefore(
+                    dayjs(`${date} ${b.time}`, "YYYY-MM-DD HH:mm")
+                ) ? -1 : 1
+            );
+    
+            setSchedules(updatedSchedules);
+    
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSchedules));
+    
+            console.log("Updated schedules after adding:", updatedSchedules);
+    
+            return null;
+        } catch (error) {
+            console.error("Failed to add schedule:", error);
+            return null;
+        }
     };
 
     const removeSchedule = (date: string, taskIndex: number) => {

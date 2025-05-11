@@ -1,34 +1,19 @@
+import { useRouter } from 'expo-router';
 import { Box } from '@/components/ui/box';
-import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
-import DateSelector from '@/components/ui/date-selector';
+import { Button, ButtonText, ButtonGroup, ButtonIcon } from '@/components/ui/button';
 import { Heading } from '@/components/ui/heading';
-import { AddIcon, CloseIcon, Icon } from '@/components/ui/icon';
-import {
-  Modal,
-  ModalBackdrop,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-} from '@/components/ui/modal';
+import { Modal, ModalBackdrop, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalCloseButton } from '@/components/ui/modal';
 import { Text } from '@/components/ui/text';
+import DateSelector from '@/components/ui/date-selector';
+import { Icon, TrashIcon, AddIcon, CloseIcon } from '@/components/ui/icon';
 import { useFocusEffect } from "@react-navigation/native";
 import dayjs from 'dayjs';
-import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
-import {
-  Alert,
-  SectionList as RNSectionList,
-  SectionList,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-  ViewToken
-} from 'react-native';
+import { SectionList as RNSectionList, SectionList, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useSchedule } from '../../context/schedule-context';
 
+const ITEM_HEIGHT = 42;
 interface ScheduleItem {
   time?: string;
   duration?: string;
@@ -43,206 +28,239 @@ interface ScheduleSection {
   data: ScheduleItem[];
 }
 
-const ITEM_HEIGHT = 42;
-
 export default function ScheduleList() {
   const router = useRouter();
-  // @ts-ignore
+  const [showModal, setShowModal] = useState(false);
+  const swipeableRef = useRef<Swipeable | null>(null);
   const { schedules, removeSchedule } = useSchedule();
   const [sections, setSections] = useState<ScheduleSection[]>([]);
-  const [showModal, setShowModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(dayjs().format('YYYY-MM-DD'));
   const sectionListRef = useRef<RNSectionList<ScheduleItem>>(null);
   const viewConfigRef = useRef({ viewAreaCoveragePercentThreshold: 30 });
-  const isAutoScrollingRef = useRef(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<ScheduleItem | null>(null);
+  const [selectedSection, setSelectedSection] = useState<ScheduleSection | null>(null);
 
+  const updateSections = () => {
+    const startDate = dayjs().subtract(14, 'day');
+    const endDate = dayjs().add(14, 'day');
+    const allDates: ScheduleSection[] = [];
+  
+    for (let d = startDate; d.isBefore(endDate) || d.isSame(endDate, 'day'); d = d.add(1, 'day')) {
+      const dateStr = d.format("YYYY-MM-DD");
+      const isToday = dateStr === dayjs().format("YYYY-MM-DD");
+  
+      allDates.push({
+        title: isToday ? `Today - ${dateStr}` : dateStr,
+        date: dateStr,
+        data: schedules[dateStr] && schedules[dateStr].length > 0 ? schedules[dateStr] : [{ __empty: true }],
+      });
+    }
+  
+    return allDates;
+  };
   useFocusEffect(
     React.useCallback(() => {
-        const startDate = dayjs().subtract(14, 'day');
-        const endDate = dayjs("2025-05-16");
-        const allDates: ScheduleSection[] = [];
+      const allDates = updateSections();
+      setSections(allDates);
 
-        for (let d = startDate; d.isBefore(endDate) || d.isSame(endDate, 'day'); d = d.add(1, 'day')) {
-            const dateStr = d.format("YYYY-MM-DD");
-            const isToday = dateStr === dayjs().format("YYYY-MM-DD");
-
-            allDates.push({
-                title: isToday ? `Today - ${dateStr}` : dateStr,
-                date: dateStr,
-                data: schedules[dateStr] && schedules[dateStr].length > 0 ? schedules[dateStr] : [{ __empty: true }],
-            });
-        }
-
-        setSections(allDates);
-
+      requestAnimationFrame(() => {
         const todayIndex = allDates.findIndex(section => section.date === dayjs().format("YYYY-MM-DD"));
         if (todayIndex !== -1 && sectionListRef.current) {
-            setTimeout(() => {
-                sectionListRef.current?.scrollToLocation({
-                    sectionIndex: todayIndex,
-                    itemIndex: 0,
-                    viewPosition: 0.3,
-                    animated: true,
-                });
-            }, 300);
+          sectionListRef.current.scrollToLocation({
+            sectionIndex: todayIndex,
+            itemIndex: 0,
+            viewPosition: 0.3,
+            animated: false,
+          });
         }
-
+      });
     }, [schedules])
-);
-
-const handleDateSelect = (date: string) => {
-  setSelectedDate(date);
-  const index = sections.findIndex(section =>
-    section.date === date
   );
 
-  if (index !== -1 && sectionListRef.current) {
+  const handleDateSelect = (date: string) => {
+    setSelectedDate(date);
+    const index = sections.findIndex(section => section.date === date);
+  
+    if (index !== -1 && sectionListRef.current) {
       sectionListRef.current.scrollToLocation({
-          sectionIndex: index,
-          itemIndex: 0,
-          viewPosition: 0,
-          animated: true,
+        sectionIndex: index,
+        itemIndex: 0,
+        viewPosition: 0,
+        animated: true,
       });
-  }
-};
-
-  const onViewRef = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
-    if (isAutoScrollingRef.current) return;
-
-    const firstVisible = viewableItems.find(v => v.section?.date);
-    if (firstVisible?.section?.date) {
-      setSelectedDate(firstVisible.section.date);
     }
-  });
+  };
 
-  const allDates = sections.map((section) => section.date);
-  const minDate = allDates[0] || "2025-04-20";
-  const maxDate = allDates[allDates.length - 1] || "2025-05-16";
+  const handleDelete = () => {
+    if (selectedItem && selectedSection) {
+      const sectionIndex = sections.findIndex(s => s.date === selectedSection.date);
+      const updatedSections = sections.map((s, index) => {
+        if (index === sectionIndex) {
+          return { ...s, data: s.data.filter(item => item !== selectedItem) };
+        }
+        return s;
+      }).filter(s => s.data.length > 0);
+
+      setSections(updatedSections);
+      removeSchedule(selectedSection.date, selectedSection.data.indexOf(selectedItem));
+      setShowDeleteModal(false);
+      setSelectedItem(null);
+      setSelectedSection(null);
+      if (swipeableRef.current) {
+        swipeableRef.current.close();
+      }
+    }
+  };
 
   return (
-    <Box style={{ flex: 1, position: 'relative' }}>
-      <DateSelector
-        selectedDate={selectedDate}
-        onSelect={handleDateSelect}
-        minDate={dayjs().subtract(14, 'day').format("YYYY-MM-DD")}
-        maxDate={maxDate}
-      />
-
-      <SectionList<ScheduleItem, ScheduleSection>
-        // @ts-ignore
-        ref={sectionListRef}
-        sections={sections}
-        keyExtractor={(_, index) => index.toString()}
-        onViewableItemsChanged={onViewRef.current}
-        viewabilityConfig={viewConfigRef.current}
-        renderSectionHeader={({ section }) => (
-          <Text style={styles.header}>{section.title}</Text>
-        )}
-        renderItem={({ section, item, index }) =>
-          "__empty" in item && item.__empty ? (
-            <View style={styles.emptyItemContainer}>
-              <Text style={styles.emptyText}>No schedule</Text>
-            </View>
-          ) : (
-            <Swipeable
-              renderRightActions={() => (
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={() => {
-                    Alert.alert(
-                      "Delete Task",
-                      `Are you sure you want to delete "${item.title}"?`,
-                      [
-                        { text: "Cancel", style: "cancel" },
-                        {
-                          text: "Delete",
-                          style: "destructive",
-                          onPress: () => {
-                            removeSchedule(section.date, index);
-                          },
-                        },
-                      ]
-                    );
-                  }}
-                >
-                  <Text style={styles.deleteButtonText}>Delete</Text>
-                </TouchableOpacity>
-              )}
-            >
-              <View style={styles.itemContainer}>
-                <View style={styles.timeContainer}>
-                  <Text style={styles.timeText}>{item.time}</Text>
-                  <Text style={styles.durationText}>{item.duration}</Text>
+      <Box style={{ flex: 1, position: 'relative' }}>
+        <DateSelector
+          selectedDate={selectedDate}
+          onSelect={handleDateSelect}
+          minDate={dayjs().subtract(14, 'day').format("YYYY-MM-DD")}
+          maxDate={dayjs().add(14, 'day').format("YYYY-MM-DD")}
+        />
+  
+        <SectionList<ScheduleItem, ScheduleSection>
+          // @ts-ignore
+          ref={sectionListRef}
+          sections={sections}
+          keyExtractor={(_, index) => index.toString()}
+          onViewableItemsChanged={({ viewableItems }) => {
+            const firstVisible = viewableItems.find(v => v.section?.date);
+            if (firstVisible?.section?.date) {
+              setSelectedDate(firstVisible.section.date);
+            }
+          }}
+          viewabilityConfig={viewConfigRef.current}
+          renderSectionHeader={({ section }) => (
+            <Text style={styles.header}>{section.title}</Text>
+          )}
+          getItemLayout={(_, index) => ({
+            length: ITEM_HEIGHT,
+            offset: index * ITEM_HEIGHT,
+            index,
+          })}
+          renderItem={({ section, item, index }) => {
+            if ("__empty" in item && item.__empty) {
+              return (
+                <View style={styles.emptyItemContainer}>
+                  <Text style={styles.emptyText}>No schedule</Text>
                 </View>
-                <View style={styles.line} />
-                <View style={styles.contentContainer}>
-                  <Text style={styles.title}>{item.title}</Text>
-                  <View style={styles.locationRow}>
-                    <Text style={styles.locationText}>{item.location}</Text>
+              );
+            }
+          
+            return (
+              <Swipeable
+                ref={(ref) => {
+                  if (selectedItem === item) swipeableRef.current = ref;
+                }}
+                renderRightActions={() => (
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => {
+                      setSelectedItem(item);
+                      setSelectedSection(section);
+                      setShowDeleteModal(true);
+                    }}
+                  >
+                    <Text style={styles.deleteButtonText}>Delete</Text>
+                  </TouchableOpacity>
+                )}
+              >
+                <View style={styles.itemContainer}>
+                  <View style={styles.timeContainer}>
+                    <Text style={styles.timeText}>{item.time}</Text>
+                    <Text style={styles.durationText}>{item.duration}</Text>
+                  </View>
+                  <View style={styles.line} />
+                  <View style={styles.contentContainer}>
+                    <Text style={styles.title}>{item.title}</Text>
+                    <View style={styles.locationRow}>
+                      <Text style={styles.locationText}>{item.location}</Text>
+                    </View>
                   </View>
                 </View>
-              </View>
-            </Swipeable>
-          )
-        }
-        renderSectionFooter={() => null}
-        getItemLayout={(_, index) => ({
-          length: ITEM_HEIGHT,
-          offset: index * ITEM_HEIGHT,
-          index,
-        })}
-      />
-
-      <TouchableOpacity 
-        style={styles.fabContainer}
-      >
-          <Button
-            size="lg"
-            className="rounded-full p-0 w-16 h-16"
-            onPress={() => setShowModal(true)}
-          >
-            <ButtonIcon as={AddIcon} size="lg" />
-          </Button>
-      </TouchableOpacity>
-
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} size="md">
-        <ModalBackdrop />
-        <ModalContent>
-          <ModalHeader>
-            <Heading size="md" className="text-typography-950">Add a New Task</Heading>
-            <ModalCloseButton>
-              <Icon as={CloseIcon} size="md" />
-            </ModalCloseButton>
-          </ModalHeader>
-          <ModalBody>
-            <Text size="sm" className="text-typography-500">
-              How would you like to add your task?
-            </Text>
-          </ModalBody>
-          <ModalFooter>
+              </Swipeable>
+            );
+          }}
+        />
+        <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)}>
+          <ModalBackdrop />
+          <ModalContent className="max-w-[305px] items-center">
+            <ModalHeader>
+              <Box className="w-[56px] h-[56px] rounded-full bg-background-error items-center justify-center">
+                <Icon as={TrashIcon} className="stroke-error-600" size="xl" />
+              </Box>
+            </ModalHeader>
+            <ModalBody>
+              <Heading size="md" className="text-typography-950 mb-2 text-center">
+                Delete Task
+              </Heading>
+              <Text size="sm" className="text-typography-500 text-center">
+                Are you sure you want to delete "{selectedItem?.title}"? This action cannot be undone.
+              </Text>
+            </ModalBody>
+            <ModalFooter className="w-full">
+              <Button variant="outline" size="sm" onPress={() => setShowDeleteModal(false)} className="flex-grow">
+                <ButtonText>Cancel</ButtonText>
+              </Button>
+              <Button size="sm" onPress={handleDelete} className="flex-grow">
+                <ButtonText>Delete</ButtonText>
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+        <TouchableOpacity 
+          style={styles.fabContainer}
+        >
             <Button
-              variant="outline"
-              action="secondary"
-              onPress={() => {
-                setShowModal(false);
-                router.push('/chatting-assistant');
-              }}
+              size="lg"
+              className="rounded-full p-0 w-16 h-16"
+              onPress={() => setShowModal(true)}
             >
-              <ButtonText>AI Assistant</ButtonText>
+              <ButtonIcon as={AddIcon} size="lg" />
             </Button>
-            <Button
-              onPress={() => {
-                setShowModal(false);
-                router.push('/create-event');
-              }}
-            >
-              <ButtonText>Manually</ButtonText>
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </Box>
-  );
+        </TouchableOpacity>
+        <Modal isOpen={showModal} onClose={() => setShowModal(false)} size="md">
+          <ModalBackdrop />
+          <ModalContent>
+            <ModalHeader>
+              <Heading size="md" className="text-typography-950">Add a New Task</Heading>
+              <ModalCloseButton>
+                <Icon as={CloseIcon} size="md" />
+              </ModalCloseButton>
+            </ModalHeader>
+            <ModalBody>
+              <Text size="sm" className="text-typography-500">
+                How would you like to add your task?
+              </Text>
+            </ModalBody>
+            <ModalFooter>
+              <Button
+                variant="outline"
+                action="secondary"
+                onPress={() => {
+                  setShowModal(false);
+                  router.push('/chatting-assistant');
+                }}
+              >
+                <ButtonText>AI Assistant</ButtonText>
+              </Button>
+              <Button
+                onPress={() => {
+                  setShowModal(false);
+                  router.push('/create-event');
+                }}
+              >
+                <ButtonText>Manually</ButtonText>
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      </Box>
+    );
 }
 
 const styles = StyleSheet.create({

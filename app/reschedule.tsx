@@ -37,40 +37,64 @@ const proposals = [
 
 export default function RescheduleScreen() {
   const router = useRouter();
-  const { addSchedule, schedules } = useSchedule();
+  const { addSchedule } = useSchedule();
   const [showModal, setShowModal] = useState(false);
-  const [selectedProposal, setSelectedProposal] = useState<ScheduleItem | null>(null);
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
+  const [modalTask, setModalTask] = useState<ScheduleItem | null>(null);
+  const [isSuccess, setIsSuccess] = useState(true);
 
   const handlePreview = (id: number) => {
     const proposal = proposals.find((p) => p.id === id);
     if (proposal) {
-      setSelectedProposal(proposal.task);
+      setModalTitle("Preview Task");
+      setModalMessage("");
+      setModalTask(proposal.task);
       setShowModal(true);
     }
   };
 
-  const handleApply = (id: number) => {
-    const proposal = proposals.find((p) => p.id === id);
-    
-    if (proposal) {
-      const today = dayjs().format("YYYY-MM-DD");
-      const task: ScheduleItem = {
-        ...proposal.task,
-        time: proposal.task.time,
-        duration: proposal.task.duration,
-      };
-
-      const conflict = addSchedule(today, task, true);
-      if (!conflict) {
-        console.log(`Task "${task.title}" added successfully.`);
-        alert(`Task "${task.title}" added successfully.`);
-        router.push("/tabs/schedule-list");
-      } else {
-        console.log(`Conflict detected with task: ${conflict.title}`);
-        alert(`Conflict detected with task: ${conflict.title}`);
-      }
-    }
+  const generateTaskId = () => {
+    return `id-${dayjs().format("YYYYMMDDHHmmssSSS")}`;
   };
+
+  const handleApply = async (id: number) => {
+    const proposal = proposals.find((p) => p.id === id);
+    if (proposal) {
+        const today = dayjs().format("YYYY-MM-DD");
+        const task: ScheduleItem = {
+            ...proposal.task,
+            id: generateTaskId(),
+            time: proposal.task.time,
+            duration: proposal.task.duration,
+        };
+
+        try {
+            const conflict = await addSchedule(today, task, true);
+
+            if (!conflict) {
+                setModalTitle("Task Added Successfully");
+                setModalMessage(`Task "${task.title}" was added to your schedule.`);
+                setModalTask(task);
+                setIsSuccess(true);
+            } else {
+                setModalTitle("Task Conflict Detected");
+                setModalMessage(`Conflict detected with task: "${conflict.title}"`);
+                setModalTask(task);
+                setIsSuccess(false);
+            }
+
+            setShowModal(true);
+        } catch (error) {
+            console.error("Failed to add task:", error);
+            setModalTitle("Error");
+            setModalMessage("Failed to add task. Please try again.");
+            setModalTask(task);
+            setIsSuccess(false);
+            setShowModal(true);
+        }
+    }
+};
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -102,38 +126,52 @@ export default function RescheduleScreen() {
         </VStack>
       </ScrollView>
 
-      {selectedProposal && (
-        <Modal isOpen={showModal} onClose={() => setShowModal(false)} size="md">
-          <ModalBackdrop />
-          <ModalContent>
-            <ModalHeader>
-              <Heading>
-                Preview Task
-              </Heading>
-              <ModalCloseButton>
-                <Icon as={CloseIcon} size="md" />
-              </ModalCloseButton>
-            </ModalHeader>
-            <ModalBody>
-              <Text style={styles.modalSubTitle}>📅 Task:</Text>
-              <Text style={styles.modalText}>Title: {selectedProposal.title}</Text>
-              <Text style={styles.modalText}>Location: {selectedProposal.location}</Text>
-              <Text style={styles.modalText}>Time: {selectedProposal.time}</Text>
-              <Text style={styles.modalText}>Duration: {selectedProposal.duration}</Text>
-            </ModalBody>
-            <ModalFooter>
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} size="md">
+        <ModalBackdrop />
+        <ModalContent>
+          <ModalHeader>
+            <Heading>{modalTitle}</Heading>
+            <ModalCloseButton>
+              <Icon as={CloseIcon} size="md" />
+            </ModalCloseButton>
+          </ModalHeader>
+          <ModalBody>
+            {modalTask && (
+              <>
+                <Text style={styles.modalSubTitle}>📅 Task Details:</Text>
+                <Text style={styles.modalText}>Title: {modalTask.title}</Text>
+                <Text style={styles.modalText}>Location: {modalTask.location}</Text>
+                <Text style={styles.modalText}>Time: {modalTask.time}</Text>
+                <Text style={styles.modalText}>Duration: {modalTask.duration}</Text>
+              </>
+            )}
+            {modalMessage && (
+              <Text style={[styles.modalText, isSuccess ? styles.successText : styles.errorText]}>
+                {modalMessage}
+              </Text>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            {modalTitle === "Preview Task" ? (
               <Button
                 onPress={() => {
                   setShowModal(false);
-                  handleApply(proposals.find((p) => p.task === selectedProposal)?.id || 0);
+                  handleApply(proposals.find((p) => p.task === modalTask)?.id || 0);
                 }}
               >
                 <ButtonText>Apply</ButtonText>
               </Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
-      )}
+            ) : (
+              <Button onPress={() => {
+                setShowModal(false);
+                router.push("/tabs/schedule-list");
+              }}>
+                <ButtonText>OK</ButtonText>
+              </Button>
+            )}
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -200,5 +238,11 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     lineHeight: 24,
     letterSpacing: 0.1,
+  },
+  successText: {
+    color: "#10b981",
+  },
+  errorText: {
+    color: "#ef4444",
   },
 });

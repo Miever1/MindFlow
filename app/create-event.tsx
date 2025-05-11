@@ -57,7 +57,7 @@ export default function CreateEventScreen() {
   const [showModal, setShowModal] = useState(false);
   const [nextAvailableTime, setNextAvailableTime] = useState<string | null>(null);
   
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!title) {
         return;
     }
@@ -83,20 +83,29 @@ export default function CreateEventScreen() {
         priority,
     };
 
-    const conflict = addSchedule(startDateTime, newTask);
-    if (conflict) {
-        setConflictTask(conflict);
-        
-        findNextAvailableSlot();
-        
-        setShowModal(true);
-        return;
-    }
+    try {
+        const conflict = await addSchedule(startDateTime, newTask);
 
-    router.push("/tabs/schedule-list");
+        if (conflict) {
+            setConflictTask(conflict);
+            setTimeout(() => findNextAvailableSlot(durationFormatted), 100);
+            setShowModal(true);
+            return;
+        }
+
+        setTimeout(() => findNextAvailableSlot(durationFormatted), 100);
+        setTitle("");
+        setLocation("");
+        setTaskDuration("");
+        setPriority("none");
+        setNote("");
+        router.push("/tabs/schedule-list");
+    } catch (error) {
+        console.error("Failed to add schedule:", error);
+    }
 };
 
-const handleIgnoreConflict = () => {
+const handleIgnoreConflict = async () => {
   const startDateTime = dayjs(startDate).format("YYYY-MM-DD");
   
   const newTask: ScheduleItem = {
@@ -107,7 +116,7 @@ const handleIgnoreConflict = () => {
     priority,
   };
 
-  addSchedule(startDateTime, newTask, true);
+  await addSchedule(startDateTime, newTask, true);
   
   setShowModal(false);
   router.push("/tabs/schedule-list");
@@ -121,41 +130,44 @@ const parseDuration = (duration: string) => {
   return hours * 60 + minutes;
 };
 
-const findNextAvailableSlot = () => {
-  const startDateTime = dayjs(startDate).format("YYYY-MM-DD");
-  const tasks = schedules[startDateTime] || [];
-  const durationMinutes = parseDuration(taskDuration);
+const findNextAvailableSlot = (duration = "1h") => {
+  const durationMinutes = parseDuration(duration);
+  let currentDateTime = dayjs();
 
-  for (let i = 0; i < tasks.length; i++) {
-      const currentTask = tasks[i];
-      const nextTask = tasks[i + 1];
+  while (true) {
+      const currentDate = currentDateTime.format("YYYY-MM-DD");
+      const tasks = schedules[currentDate] || [];
 
-      const currentEndTime = dayjs(`${startDateTime} ${currentTask.time}`, "YYYY-MM-DD HH:mm")
-          .add(parseDuration(currentTask.duration), "minute");
-
-      if (!nextTask) {
-          const suggestedTime = currentEndTime.format("HH:mm");
-          setNextAvailableTime(suggestedTime);
-          return currentEndTime;
+      if (tasks.length === 0) {
+          const suggestedTime = currentDateTime.set("hour", 8).set("minute", 0);
+          setNextAvailableTime(suggestedTime.format("YYYY-MM-DD HH:mm"));
+          return suggestedTime;
       }
 
-      const nextStartTime = dayjs(`${startDateTime} ${nextTask.time}`, "YYYY-MM-DD HH:mm");
+      for (let i = 0; i < tasks.length; i++) {
+          const currentTask = tasks[i];
+          const nextTask = tasks[i + 1];
 
-      if (nextStartTime.diff(currentEndTime, "minute") >= durationMinutes) {
-          const suggestedTime = currentEndTime.format("HH:mm");
-          setNextAvailableTime(suggestedTime);
-          return currentEndTime;
+          const currentEndTime = dayjs(`${currentDate} ${currentTask.time}`, "YYYY-MM-DD HH:mm")
+              .add(parseDuration(currentTask.duration), "minute");
+
+          const endOfDay = dayjs(`${currentDate} 23:59`, "YYYY-MM-DD HH:mm");
+          if (!nextTask && currentEndTime.add(durationMinutes, "minute").isBefore(endOfDay)) {
+              setNextAvailableTime(currentEndTime.format("YYYY-MM-DD HH:mm"));
+              return currentEndTime;
+          }
+
+          if (nextTask) {
+              const nextStartTime = dayjs(`${currentDate} ${nextTask.time}`, "YYYY-MM-DD HH:mm");
+              if (nextStartTime.diff(currentEndTime, "minute") >= durationMinutes) {
+                  setNextAvailableTime(currentEndTime.format("YYYY-MM-DD HH:mm"));
+                  return currentEndTime;
+              }
+          }
       }
-  }
 
-  if (tasks.length === 0) {
-      const suggestedTime = "08:00";
-      setNextAvailableTime(suggestedTime);
-      return dayjs(`${startDateTime} 08:00`, "YYYY-MM-DD HH:mm");
+      currentDateTime = currentDateTime.add(1, "day").set("hour", 8).set("minute", 0);
   }
-
-  setNextAvailableTime(null);
-  return null;
 };
 
   return (
@@ -334,7 +346,9 @@ const findNextAvailableSlot = () => {
         {conflictTask.title}
     </Text>
     <Text className="text-typography-700">
-        Time: {conflictTask.time} - Duration: {conflictTask.duration}
+      Time: {conflictTask.time} - {dayjs(`${dayjs(startDate).format("YYYY-MM-DD")} ${conflictTask.time}`, "YYYY-MM-DD HH:mm")
+          .add(parseDuration(conflictTask.duration), "minute")
+          .format("HH:mm")} ({conflictTask.duration})
     </Text>
     <Text className="text-typography-700">
         Location: {conflictTask.location}
@@ -346,20 +360,23 @@ const findNextAvailableSlot = () => {
     )}
     
     {nextAvailableTime && (
-        <Text className="mt-4 text-typography-700 font-semibold">
-            Suggested Time: {nextAvailableTime}
-        </Text>
-    )}
+      <Text className="mt-4 text-typography-700 font-semibold">
+          Suggested Time: {nextAvailableTime.includes(" ") ? 
+          dayjs(nextAvailableTime, "YYYY-MM-DD HH:mm").format("YYYY-MM-DD HH:mm") : 
+          dayjs().format("YYYY-MM-DD") + " " + nextAvailableTime}
+      </Text>
+  )}
 </ModalBody>
 <ModalFooter className="flex justify-end gap-2">
     <Button onPress={handleIgnoreConflict}  variant="outline">
         <ButtonText>Ignore Conflict</ButtonText>
     </Button>
     <Button
-    onPress={() => {
+    onPress={async () => {
         if (nextAvailableTime) {
-            const startDateTime = dayjs(startDate).format("YYYY-MM-DD");
-            const newStartTime = nextAvailableTime;
+            const nextAvailableDateTime = dayjs(nextAvailableTime, "YYYY-MM-DD HH:mm");
+            const startDateTime = nextAvailableDateTime.format("YYYY-MM-DD");
+            const newStartTime = nextAvailableDateTime.format("HH:mm");
 
             const durationMinutes = dayjs(endTime).diff(dayjs(startTime), "minute");
             const hours = Math.floor(durationMinutes / 60);
@@ -377,16 +394,26 @@ const findNextAvailableSlot = () => {
                 priority,
             };
 
-            addSchedule(startDateTime, newTask);
-            setShowModal(false);
-            router.push("/tabs/schedule-list");
+            try {
+                const conflict = await addSchedule(startDateTime, newTask, true);
+                
+                if (conflict) {
+                    Alert.alert("Conflict Detected", "The task you are trying to add conflicts with an existing task.");
+                    return;
+                }
+
+                setShowModal(false);
+                router.push("/tabs/schedule-list");
+            } catch (error) {
+                console.error("Failed to add schedule:", error);
+            }
         } else {
             Alert.alert("No Available Time", "Could not find a suitable slot for this task.");
         }
     }}
 >
-        <ButtonText>Resolve Conflict</ButtonText>
-    </Button>
+    <ButtonText>Resolve Conflict</ButtonText>
+</Button>
 
    
 </ModalFooter>

@@ -101,7 +101,7 @@ export default function VoiceAssistantScreen() {
     }, 500);
   };
 
-  const handleLinkPress = (message: Message) => {
+  const handleLinkPress = async (message: Message) => {
     if (message.isLink) {
         const newTask = {
             time: "17:30",
@@ -110,7 +110,7 @@ export default function VoiceAssistantScreen() {
             location: "Zoom",
         };
         const date = dayjs().format("YYYY-MM-DD");
-        const addedTask = addSchedule(date, newTask, true);
+        const addedTask = await addSchedule(date, newTask, true);
         if (addedTask) {
             console.log("Task added successfully:", addedTask);
         } else {
@@ -161,8 +161,8 @@ export default function VoiceAssistantScreen() {
     <SafeAreaView style={styles.container}>
       <Header title="AI Assistant" />
       <FlatList
-        style={styles.chat}
         data={messages}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
             <TouchableOpacity
@@ -269,7 +269,6 @@ export default function VoiceAssistantScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff", marginBottom: Platform.OS === "ios" ? 0 : 40 },
-  chat: { flex: 1, padding: 16 },
   messageRow: {
     flexDirection: "row",
     alignItems: "flex-end",

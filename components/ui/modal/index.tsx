@@ -78,8 +78,10 @@ const modalFooterStyle = tva({
   base: 'flex-row justify-end items-center gap-2',
 });
 
-type IModalProps = React.ComponentProps<typeof UIModal> &
-  VariantProps<typeof modalStyle> & { className?: string };
+type IModalProps = React.PropsWithChildren<
+  React.ComponentProps<typeof UIModal> &
+  VariantProps<typeof modalStyle> & { className?: string }
+>;
 
 type IModalBackdropProps = React.ComponentProps<typeof UIModal.Backdrop> &
   VariantProps<typeof modalBackdropStyle> & { className?: string };
