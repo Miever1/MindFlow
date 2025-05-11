@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
-import React, { createContext, ReactNode, useContext, useState } from 'react';
+import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface ScheduleItem {
     time: string;
@@ -19,47 +20,58 @@ interface ScheduleContextType {
 
 const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined);
 
+const STORAGE_KEY = "SCHEDULES_DATA";
+
 export const ScheduleProvider = ({ children }: { children: ReactNode }) => {
-    const today = dayjs().format("YYYY-MM-DD");
-    const endDate = dayjs().add(30, "day").format("YYYY-MM-DD");
+    const [schedules, setSchedules] = useState<Record<string, ScheduleItem[]>>({});
+
+    useEffect(() => {
+        const loadSchedules = async () => {
+            try {
+                const storedData = await AsyncStorage.getItem(STORAGE_KEY);
+                if (storedData) {
+                    setSchedules(JSON.parse(storedData));
+                } else {
+                    const initialData = generateInitialSchedules();
+                    setSchedules(initialData);
+                    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(initialData));
+                }
+            } catch (error) {
+                console.error("Failed to load schedules:", error);
+            }
+        };
+
+        loadSchedules();
+    }, []);
+
+    const saveSchedules = async (data: Record<string, ScheduleItem[]>) => {
+        try {
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        } catch (error) {
+            console.error("Failed to save schedules:", error);
+        }
+    };
 
     const generateInitialSchedules = () => {
-        const schedules: Record<string, ScheduleItem[]> = {};
-        let currentDate = dayjs(today);
+        const today = dayjs().format("YYYY-MM-DD");
+        const endDate = dayjs().add(30, "day").format("YYYY-MM-DD");
+        const initialSchedules: Record<string, ScheduleItem[]> = {};
 
+        let currentDate = dayjs(today);
         while (currentDate.isSameOrBefore(endDate)) {
-            schedules[currentDate.format("YYYY-MM-DD")] = [];
+            initialSchedules[currentDate.format("YYYY-MM-DD")] = [];
             currentDate = currentDate.add(1, "day");
         }
 
-        schedules[today] = [
-            { time: "09:00", duration: "1h", title: "Gym", location: "Gym" },
-            { time: "12:00", duration: "2h", title: "Class 2", location: "Room 5005" },
-            { time: "14:00", duration: "1h", title: "Lunch", location: "Cafeteria" },
-            { time: "15:00", duration: "2h", title: "Class 3", location: "Room 6201" },
-            { time: "18:00", duration: "2h", title: "Do groceries", location: "Supermarket" },
-        ];
-        
-        schedules[dayjs(today).add(1, "day").format("YYYY-MM-DD")] = [
-            { time: "10:00", duration: "2h", title: "Class 1", location: "Room 5001" },
-            { time: "13:00", duration: "1h", title: "Project Meeting", location: "Zoom" },
-            { time: "14:30", duration: "1.5h", title: "Library Study", location: "Library - 2F" },
-            { time: "16:30", duration: "1h", title: "Coffee Break", location: "Cafe Bliss" },
-            { time: "18:00", duration: "2h", title: "Dinner with Team", location: "Sushi House" },
-        ];
-
-        return schedules;
+        return initialSchedules;
     };
-
-    const [schedules, setSchedules] = useState(generateInitialSchedules());
 
     const parseDuration = (duration: string) => {
         const hourMatch = duration.match(/(\d+(\.\d+)?)h/);
         const minuteMatch = duration.match(/(\d+)m/);
         const hours = hourMatch ? parseFloat(hourMatch[1]) : 0;
         const minutes = minuteMatch ? parseInt(minuteMatch[1]) : 0;
-        const totalMinutes = Math.round(hours * 60) + minutes;
-        return totalMinutes > 0 ? totalMinutes : -1;
+        return hours * 60 + minutes;
     };
 
     const findConflict = (date: string, newTask: ScheduleItem) => {
@@ -89,30 +101,26 @@ export const ScheduleProvider = ({ children }: { children: ReactNode }) => {
 
     const addSchedule = (date: string, newTask: ScheduleItem, ignoreConflict = false): ScheduleItem | null => {
         const conflict = findConflict(date, newTask);
-    
+
         if (conflict && !ignoreConflict) return conflict;
-    
-        setSchedules((prev) => {
-            const updated = { ...prev };
-            
-            updated[date] = [...(updated[date] || []), newTask].sort((a, b) =>
-                dayjs(`${date} ${a.time}`, "YYYY-MM-DD HH:mm").isBefore(
-                    dayjs(`${date} ${b.time}`, "YYYY-MM-DD HH:mm")
-                ) ? -1 : 1
-            );
-    
-            return updated;
-        });
-    
+
+        const updated = { ...schedules };
+        updated[date] = [...(updated[date] || []), newTask].sort((a, b) =>
+            dayjs(`${date} ${a.time}`, "YYYY-MM-DD HH:mm").isBefore(
+                dayjs(`${date} ${b.time}`, "YYYY-MM-DD HH:mm")
+            ) ? -1 : 1
+        );
+
+        setSchedules(updated);
+        saveSchedules(updated);
         return null;
     };
 
     const removeSchedule = (date: string, taskIndex: number) => {
-        setSchedules((prev) => {
-            const updated = { ...prev };
-            updated[date].splice(taskIndex, 1);
-            return updated;
-        });
+        const updated = { ...schedules };
+        updated[date].splice(taskIndex, 1);
+        setSchedules(updated);
+        saveSchedules(updated);
     };
 
     return (

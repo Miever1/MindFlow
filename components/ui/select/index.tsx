@@ -27,9 +27,9 @@ import {
 import { Pressable, View, TextInput } from 'react-native';
 
 const SelectTriggerWrapper = React.forwardRef<
-  React.ComponentRef<typeof Pressable>,
+  React.ElementRef<typeof Pressable>,
   React.ComponentProps<typeof Pressable>
->(function SelectTriggerWrapper({ ...props }, ref) {
+>(({ ...props }, ref) => {
   return <Pressable {...props} ref={ref} />;
 });
 
@@ -134,9 +134,9 @@ type ISelectProps = VariantProps<typeof selectStyle> &
   React.ComponentProps<typeof UISelect> & { className?: string };
 
 const Select = React.forwardRef<
-  React.ComponentRef<typeof UISelect>,
+  React.ElementRef<typeof UISelect>,
   ISelectProps
->(function Select({ className, ...props }, ref) {
+>(({ className, ...props }, ref) => {
   return (
     <UISelect
       className={selectStyle({
@@ -152,12 +152,9 @@ type ISelectTriggerProps = VariantProps<typeof selectTriggerStyle> &
   React.ComponentProps<typeof UISelect.Trigger> & { className?: string };
 
 const SelectTrigger = React.forwardRef<
-  React.ComponentRef<typeof UISelect.Trigger>,
+  React.ElementRef<typeof UISelect.Trigger>,
   ISelectTriggerProps
->(function SelectTrigger(
-  { className, size = 'md', variant = 'outline', ...props },
-  ref
-) {
+>(({ className, size = 'md', variant = 'outline', ...props }, ref) => {
   return (
     <UISelect.Trigger
       className={selectTriggerStyle({
@@ -176,9 +173,9 @@ type ISelectInputProps = VariantProps<typeof selectInputStyle> &
   React.ComponentProps<typeof UISelect.Input> & { className?: string };
 
 const SelectInput = React.forwardRef<
-  React.ComponentRef<typeof UISelect.Input>,
+  React.ElementRef<typeof UISelect.Input>,
   ISelectInputProps
->(function SelectInput({ className, ...props }, ref) {
+>(({ className, ...props }, ref) => {
   const { size: parentSize, variant: parentVariant } = useStyleContext();
   return (
     <UISelect.Input
@@ -199,9 +196,9 @@ type ISelectIcon = VariantProps<typeof selectIconStyle> &
   React.ComponentProps<typeof UISelect.Icon> & { className?: string };
 
 const SelectIcon = React.forwardRef<
-  React.ComponentRef<typeof UISelect.Icon>,
+  React.ElementRef<typeof UISelect.Icon>,
   ISelectIcon
->(function SelectIcon({ className, size, ...props }, ref) {
+>(({ className, size, ...props }, ref) => {
   const { size: parentSize } = useStyleContext();
   if (typeof size === 'number') {
     return (
@@ -213,7 +210,7 @@ const SelectIcon = React.forwardRef<
       />
     );
   } else if (
-    //@ts-expect-error : web only
+    //@ts-expect-error
     (props?.height !== undefined || props?.width !== undefined) &&
     size === undefined
   ) {

@@ -127,12 +127,9 @@ type IProgressFilledTrackProps = VariantProps<typeof progressFilledTrackStyle> &
   React.ComponentProps<typeof UIProgress.FilledTrack>;
 
 const Progress = React.forwardRef<
-  React.ComponentRef<typeof UIProgress>,
+  React.ElementRef<typeof UIProgress>,
   IProgressProps
->(function Progress(
-  { className, size = 'md', orientation = 'horizontal', ...props },
-  ref
-) {
+>(({ className, size = 'md', orientation = 'horizontal', ...props }, ref) => {
   return (
     <UIProgress
       ref={ref}
@@ -145,9 +142,9 @@ const Progress = React.forwardRef<
 });
 
 const ProgressFilledTrack = React.forwardRef<
-  React.ComponentRef<typeof UIProgress.FilledTrack>,
+  React.ElementRef<typeof UIProgress.FilledTrack>,
   IProgressFilledTrackProps
->(function ProgressFilledTrack({ className, ...props }, ref) {
+>(({ className, ...props }, ref) => {
   const { size: parentSize, orientation: parentOrientation } =
     useStyleContext(SCOPE);
 

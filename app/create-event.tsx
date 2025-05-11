@@ -87,7 +87,6 @@ export default function CreateEventScreen() {
     if (conflict) {
         setConflictTask(conflict);
         
-        // 查找推荐时间
         findNextAvailableSlot();
         
         setShowModal(true);

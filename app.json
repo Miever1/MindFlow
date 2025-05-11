@@ -7,7 +7,6 @@
     "icon": "./assets/images/appstore.png",
     "scheme": "mindflow",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
     "ios": {
       "icon": "./assets/images/appstore.png",
       "supportsTablet": true,
@@ -47,13 +46,13 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "144a2835-a998-4bd6-8927-24a2eda26735"
+        "projectId": "3bc0eec7-37c7-409e-85d9-4bb1f610c82b"
       }
     },
     "owner": "miever",
     "runtimeVersion": "1.0.0",
     "updates": {
-      "url": "https://u.expo.dev/144a2835-a998-4bd6-8927-24a2eda26735"
+      "url": "https://u.expo.dev/3bc0eec7-37c7-409e-85d9-4bb1f610c82b"
     }
   }
 }

@@ -47,6 +47,7 @@ const ITEM_HEIGHT = 42;
 
 export default function ScheduleList() {
   const router = useRouter();
+  // @ts-ignore
   const { schedules, removeSchedule } = useSchedule();
   const [sections, setSections] = useState<ScheduleSection[]>([]);
   const [showModal, setShowModal] = useState(false);

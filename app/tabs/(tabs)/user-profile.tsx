@@ -59,7 +59,6 @@ const UserProfile = () => {
         <Button
           className="py-2 px-4"
           onPress={() => {
-            console.log("Logging out...");
             router.push("/login");
           }}
         >

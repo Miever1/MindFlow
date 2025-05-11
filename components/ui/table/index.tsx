@@ -44,24 +44,23 @@ type ITableDataProps = React.ComponentProps<typeof View | typeof Text> & {
 };
 type ITableCaptionProps = React.ComponentProps<typeof ExpoTCaption>;
 
-const Table = React.forwardRef<
-  React.ComponentRef<typeof ExpoTable>,
-  ITableProps
->(({ className, ...props }, ref) => {
-  return (
-    <ExpoTable
-      // @ts-expect-error : ref type changed
-      ref={ref}
-      className={tableStyle({ class: className })}
-      {...props}
-    />
-  );
-});
+const Table = React.forwardRef<React.ElementRef<typeof ExpoTable>, ITableProps>(
+  ({ className, ...props }, ref) => {
+    return (
+      <ExpoTable
+        // @ts-expect-error
+        ref={ref}
+        className={tableStyle({ class: className })}
+        {...props}
+      />
+    );
+  }
+);
 
 const TableHeader = React.forwardRef<
-  React.ComponentRef<typeof ExpoTHead>,
+  React.ElementRef<typeof ExpoTHead>,
   ITableHeaderProps
->(function TableHeader({ className, ...props }, ref) {
+>(({ className, ...props }, ref) => {
   const contextValue = useMemo(() => {
     return {
       isHeaderRow: true,
@@ -70,7 +69,7 @@ const TableHeader = React.forwardRef<
   return (
     <TableHeaderContext.Provider value={contextValue}>
       <ExpoTHead
-        // @ts-expect-error : ref type changed
+        // @ts-expect-error
         ref={ref}
         className={tableHeaderStyle({ class: className })}
         {...props}
@@ -80,12 +79,12 @@ const TableHeader = React.forwardRef<
 });
 
 const TableBody = React.forwardRef<
-  React.ComponentRef<typeof ExpoTBody>,
+  React.ElementRef<typeof ExpoTBody>,
   ITableBodyProps
->(function TableBody({ className, ...props }, ref) {
+>(({ className, ...props }, ref) => {
   return (
     <ExpoTBody
-      // @ts-expect-error : ref type changed
+      // @ts-expect-error
       ref={ref}
       className={tableBodyStyle({ class: className })}
       {...props}
@@ -94,9 +93,9 @@ const TableBody = React.forwardRef<
 });
 
 const TableFooter = React.forwardRef<
-  React.ComponentRef<typeof ExpoTFoot>,
+  React.ElementRef<typeof ExpoTFoot>,
   ITableFooterProps
->(function TableFooter({ className, ...props }, ref) {
+>(({ className, ...props }, ref) => {
   const contextValue = useMemo(() => {
     return {
       isFooterRow: true,
@@ -105,7 +104,7 @@ const TableFooter = React.forwardRef<
   return (
     <TableFooterContext.Provider value={contextValue}>
       <ExpoTFoot
-        // @ts-expect-error : ref type changed
+        // @ts-expect-error
         ref={ref}
         className={tableFooterStyle({ class: className })}
         {...props}
@@ -115,9 +114,9 @@ const TableFooter = React.forwardRef<
 });
 
 const TableHead = React.forwardRef<
-  React.ComponentRef<typeof View | typeof Text>,
+  React.ElementRef<typeof View | typeof Text>,
   ITableHeadProps
->(function TableHead({ useRNView = false, className, ...props }, ref) {
+>(({ useRNView = false, className, ...props }, ref) => {
   if (useRNView) {
     return (
       <View
@@ -138,15 +137,15 @@ const TableHead = React.forwardRef<
 });
 
 const TableRow = React.forwardRef<
-  React.ComponentRef<typeof ExpoTR>,
+  React.ElementRef<typeof ExpoTR>,
   ITableRowProps
->(function TableRow({ className, ...props }, ref) {
+>(({ className, ...props }, ref) => {
   const { isHeaderRow } = useContext(TableHeaderContext);
   const { isFooterRow } = useContext(TableFooterContext);
 
   return (
     <ExpoTR
-      // @ts-expect-error : ref type changed
+      // @ts-expect-error
       ref={ref}
       className={tableRowStyleStyle({
         isHeaderRow,
@@ -159,9 +158,9 @@ const TableRow = React.forwardRef<
 });
 
 const TableData = React.forwardRef<
-  React.ComponentRef<typeof View | typeof Text>,
+  React.ElementRef<typeof View | typeof Text>,
   ITableDataProps
->(function TableData({ useRNView = false, className, ...props }, ref) {
+>(({ useRNView = false, className, ...props }, ref) => {
   if (useRNView) {
     return (
       <View
@@ -182,12 +181,12 @@ const TableData = React.forwardRef<
 });
 
 const TableCaption = React.forwardRef<
-  React.ComponentRef<typeof ExpoTCaption>,
+  React.ElementRef<typeof ExpoTCaption>,
   ITableCaptionProps
 >(({ className, ...props }, ref) => {
   return (
     <ExpoTCaption
-      // @ts-expect-error : ref type changed
+      // @ts-expect-error
       ref={ref}
       className={tableCaptionStyle({ class: className })}
       {...props}

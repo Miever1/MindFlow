@@ -1,8 +1,10 @@
 import { Avatar, AvatarFallbackText, AvatarImage } from "@/components/ui/avatar";
+import dayjs from "dayjs";
 import Header from "@/components/ui/header";
 import { Text } from "@/components/ui/text";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import { useRouter } from "expo-router";
+import { useSchedule } from "./context/schedule-context";
 import React, { useRef, useState } from "react";
 import {
   FlatList,
@@ -59,6 +61,7 @@ type Message = {
 
 export default function VoiceAssistantScreen() {
   const router = useRouter();
+  const { addSchedule } = useSchedule();
   const [messages, setMessages] = useState<Message[]>([fullConversation[0]]);
   const [input, setInput] = useState("");
   const [step, setStep] = useState(1);
@@ -100,6 +103,19 @@ export default function VoiceAssistantScreen() {
 
   const handleLinkPress = (message: Message) => {
     if (message.isLink) {
+        const newTask = {
+            time: "17:30",
+            duration: "1 hour",
+            title: "Webinar",
+            location: "Zoom",
+        };
+        const date = dayjs().format("YYYY-MM-DD");
+        const addedTask = addSchedule(date, newTask, true);
+        if (addedTask) {
+            console.log("Task added successfully:", addedTask);
+        } else {
+            console.log("Failed to add task.");
+        }
         console.log("Navigating to schedule list...");
         router.push("/tabs/schedule-list");
     }

@@ -24,17 +24,16 @@ const iconStyle = tva({
 });
 
 export const Icon = React.forwardRef<
-  React.ComponentRef<typeof UIIcon>,
+  React.ElementRef<typeof UIIcon>,
   React.ComponentPropsWithoutRef<typeof UIIcon> &
     VariantProps<typeof iconStyle> & {
       height?: number | string;
       width?: number | string;
     }
->(function Icon({ size = 'md', className, ...props }, ref) {
+>(({ size = 'md', className, ...props }, ref) => {
   if (typeof size === 'number') {
     return (
       <UIIcon
-        // @ts-expect-error : TODO: fix this
         ref={ref}
         {...props}
         className={iconStyle({ class: className })}
@@ -47,7 +46,6 @@ export const Icon = React.forwardRef<
   ) {
     return (
       <UIIcon
-        // @ts-expect-error : TODO: fix this
         ref={ref}
         {...props}
         className={iconStyle({ class: className })}
@@ -56,7 +54,6 @@ export const Icon = React.forwardRef<
   }
   return (
     <UIIcon
-      // @ts-expect-error : TODO: fix this
       ref={ref}
       {...props}
       className={iconStyle({ size, class: className })}
@@ -75,25 +72,20 @@ const accessClassName = (style: any) => {
 const createIconUI = ({ ...props }: ParameterTypes) => {
   const NewUIIcon = createIcon({ Root: Svg, ...props });
   return React.forwardRef<
-    React.ComponentRef<typeof UIIcon>,
+    React.ElementRef<typeof UIIcon>,
     React.ComponentPropsWithoutRef<typeof UIIcon> &
       VariantProps<typeof iconStyle> & {
         height?: number | string;
         width?: number | string;
       }
-  >(function UIIcon({ className, ...inComingprops }, ref) {
+  >(({ className, ...inComingprops }, ref) => {
     const calculateClassName = React.useMemo(() => {
       return className === undefined
         ? accessClassName(inComingprops?.style)
         : className;
     }, [className, inComingprops?.style]);
     return (
-      <NewUIIcon
-        // @ts-expect-error : TODO: fix this
-        ref={ref}
-        {...inComingprops}
-        className={calculateClassName}
-      />
+      <NewUIIcon ref={ref} {...inComingprops} className={calculateClassName} />
     );
   });
 };

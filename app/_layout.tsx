@@ -1,6 +1,3 @@
-// app/_layout.tsx
-import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
-import { useColorScheme } from '@/hooks/useColorScheme';
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import {
   DarkTheme,
@@ -8,21 +5,21 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { Slot } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
-import { StyleSheet } from "react-native";
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useEffect, useState } from "react";
+import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
+import { useColorScheme } from "react-native";
+import { Slot } from "expo-router";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ScheduleProvider } from "./context/schedule-context";
 
 import "../global.css";
 
 export {
   // Catch any errors thrown by the Layout component.
-  ErrorBoundary
+  ErrorBoundary,
 } from "expo-router";
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -48,7 +45,7 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <GestureHandlerRootView style={styles.container}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <ScheduleProvider>
         <GluestackUIProvider mode={colorScheme === "dark" ? "dark" : "light"}>
           <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
@@ -59,9 +56,3 @@ function RootLayoutNav() {
     </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});

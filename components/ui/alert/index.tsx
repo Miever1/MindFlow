@@ -130,11 +130,8 @@ type IAlertProps = Omit<
 > &
   VariantProps<typeof alertStyle>;
 
-const Alert = React.forwardRef<React.ComponentRef<typeof UIAlert>, IAlertProps>(
-  function Alert(
-    { className, variant = 'solid', action = 'muted', ...props },
-    ref
-  ) {
+const Alert = React.forwardRef<React.ElementRef<typeof UIAlert>, IAlertProps>(
+  ({ className, variant = 'solid', action = 'muted', ...props }, ref) => {
     return (
       <UIAlert
         className={alertStyle({ action, variant, class: className })}
@@ -150,45 +147,47 @@ type IAlertTextProps = React.ComponentPropsWithoutRef<typeof UIAlert.Text> &
   VariantProps<typeof alertTextStyle>;
 
 const AlertText = React.forwardRef<
-  React.ComponentRef<typeof UIAlert.Text>,
+  React.ElementRef<typeof UIAlert.Text>,
   IAlertTextProps
->(function AlertText(
-  {
-    className,
-    isTruncated,
-    bold,
-    underline,
-    strikeThrough,
-    size = 'md',
-    sub,
-    italic,
-    highlight,
-    ...props
-  },
-  ref
-) {
-  const { action: parentAction } = useStyleContext(SCOPE);
-  return (
-    <UIAlert.Text
-      className={alertTextStyle({
-        isTruncated,
-        bold,
-        underline,
-        strikeThrough,
-        size,
-        sub,
-        italic,
-        highlight,
-        class: className,
-        parentVariants: {
-          action: parentAction,
-        },
-      })}
-      {...props}
-      ref={ref}
-    />
-  );
-});
+>(
+  (
+    {
+      className,
+      isTruncated,
+      bold,
+      underline,
+      strikeThrough,
+      size = 'md',
+      sub,
+      italic,
+      highlight,
+      ...props
+    },
+    ref
+  ) => {
+    const { action: parentAction } = useStyleContext(SCOPE);
+    return (
+      <UIAlert.Text
+        className={alertTextStyle({
+          isTruncated,
+          bold,
+          underline,
+          strikeThrough,
+          size,
+          sub,
+          italic,
+          highlight,
+          class: className,
+          parentVariants: {
+            action: parentAction,
+          },
+        })}
+        {...props}
+        ref={ref}
+      />
+    );
+  }
+);
 
 type IAlertIconProps = React.ComponentPropsWithoutRef<typeof UIAlert.Icon> &
   VariantProps<typeof alertIconStyle> & {
@@ -197,9 +196,9 @@ type IAlertIconProps = React.ComponentPropsWithoutRef<typeof UIAlert.Icon> &
   };
 
 const AlertIcon = React.forwardRef<
-  React.ComponentRef<typeof UIAlert.Icon>,
+  React.ElementRef<typeof UIAlert.Icon>,
   IAlertIconProps
->(function AlertIcon({ className, size = 'md', ...props }, ref) {
+>(({ className, size = 'md', ...props }, ref) => {
   const { action: parentAction } = useStyleContext(SCOPE);
 
   if (typeof size === 'number') {

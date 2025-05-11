@@ -78,9 +78,9 @@ type IAvatarProps = Omit<
   VariantProps<typeof avatarStyle>;
 
 const Avatar = React.forwardRef<
-  React.ComponentRef<typeof UIAvatar>,
+  React.ElementRef<typeof UIAvatar>,
   IAvatarProps
->(function Avatar({ className, size = 'md', ...props }, ref) {
+>(({ className, size = 'md', ...props }, ref) => {
   return (
     <UIAvatar
       ref={ref}
@@ -95,9 +95,9 @@ type IAvatarBadgeProps = React.ComponentPropsWithoutRef<typeof UIAvatar.Badge> &
   VariantProps<typeof avatarBadgeStyle>;
 
 const AvatarBadge = React.forwardRef<
-  React.ComponentRef<typeof UIAvatar.Badge>,
+  React.ElementRef<typeof UIAvatar.Badge>,
   IAvatarBadgeProps
->(function AvatarBadge({ className, size, ...props }, ref) {
+>(({ className, size, ...props }, ref) => {
   const { size: parentSize } = useStyleContext(SCOPE);
 
   return (
@@ -120,9 +120,9 @@ type IAvatarFallbackTextProps = React.ComponentPropsWithoutRef<
 > &
   VariantProps<typeof avatarFallbackTextStyle>;
 const AvatarFallbackText = React.forwardRef<
-  React.ComponentRef<typeof UIAvatar.FallbackText>,
+  React.ElementRef<typeof UIAvatar.FallbackText>,
   IAvatarFallbackTextProps
->(function AvatarFallbackText({ className, size, ...props }, ref) {
+>(({ className, size, ...props }, ref) => {
   const { size: parentSize } = useStyleContext(SCOPE);
 
   return (
@@ -144,9 +144,9 @@ type IAvatarImageProps = React.ComponentPropsWithoutRef<typeof UIAvatar.Image> &
   VariantProps<typeof avatarImageStyle>;
 
 const AvatarImage = React.forwardRef<
-  React.ComponentRef<typeof UIAvatar.Image>,
+  React.ElementRef<typeof UIAvatar.Image>,
   IAvatarImageProps
->(function AvatarImage({ className, ...props }, ref) {
+>(({ className, ...props }, ref) => {
   return (
     <UIAvatar.Image
       ref={ref}
@@ -154,10 +154,11 @@ const AvatarImage = React.forwardRef<
       className={avatarImageStyle({
         class: className,
       })}
-      // @ts-expect-error : This is a workaround to fix the issue with the image style on web.
+      // @ts-expect-error
       style={
         Platform.OS === 'web'
-          ? { height: 'revert-layer', width: 'revert-layer' }
+          ? // eslint-disable-next-line react-native/no-inline-styles
+            { height: 'revert-layer', width: 'revert-layer' }
           : undefined
       }
     />
@@ -168,9 +169,9 @@ type IAvatarGroupProps = React.ComponentPropsWithoutRef<typeof UIAvatar.Group> &
   VariantProps<typeof avatarGroupStyle>;
 
 const AvatarGroup = React.forwardRef<
-  React.ComponentRef<typeof UIAvatar.Group>,
+  React.ElementRef<typeof UIAvatar.Group>,
   IAvatarGroupProps
->(function AvatarGroup({ className, ...props }, ref) {
+>(({ className, ...props }, ref) => {
   return (
     <UIAvatar.Group
       ref={ref}

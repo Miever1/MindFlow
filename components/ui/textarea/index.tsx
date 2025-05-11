@@ -48,12 +48,9 @@ type ITextareaProps = React.ComponentProps<typeof UITextarea> &
   VariantProps<typeof textareaStyle>;
 
 const Textarea = React.forwardRef<
-  React.ComponentRef<typeof UITextarea>,
+  React.ElementRef<typeof UITextarea>,
   ITextareaProps
->(function Textarea(
-  { className, variant = 'default', size = 'md', ...props },
-  ref
-) {
+>(({ className, variant = 'default', size = 'md', ...props }, ref) => {
   return (
     <UITextarea
       ref={ref}
@@ -68,9 +65,9 @@ type ITextareaInputProps = React.ComponentProps<typeof UITextarea.Input> &
   VariantProps<typeof textareaInputStyle>;
 
 const TextareaInput = React.forwardRef<
-  React.ComponentRef<typeof UITextarea.Input>,
+  React.ElementRef<typeof UITextarea.Input>,
   ITextareaInputProps
->(function TextareaInput({ className, ...props }, ref) {
+>(({ className, ...props }, ref) => {
   const { size: parentSize } = useStyleContext(SCOPE);
 
   return (
